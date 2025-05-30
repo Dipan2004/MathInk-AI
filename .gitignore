@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 *.keras
 *.h5
-*.png
+!static/demo.png
 *.jpg
 *.jpeg
 *.npy
