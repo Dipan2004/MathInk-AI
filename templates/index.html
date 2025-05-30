@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Equation Recognition</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: border-color 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .mode-selector {
+            margin: 20px 0;
+        }
+        .mode-selector label {
+            margin-right: 20px;
+            font-weight: normal;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .result h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .equation {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .processed-image {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 Math Equation Recognition</h1>
+        
+        <div class="status {{ 'success' if 'success' in model_status else 'error' }}">
+            Model Status: {{ model_status }}
+        </div>
+        
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-area" id="uploadArea">
+                <p>📁 Drag and drop an image here or click to select</p>
+                <input type="file" id="fileInput" name="file" accept="image/*" required>
+            </div>
+            
+            <div class="mode-selector">
+                <strong>Processing Mode:</strong><br>
+                <label>
+                    <input type="radio" name="mode" value="basic" checked>
+                    Basic Arithmetic (e.g., 2+3, 5*7)
+                </label>
+                <label>
+                    <input type="radio" name="mode" value="linear">
+                    Linear Equations (e.g., 2x+3=7, a+5=12)
+                </label>
+            </div>
+            
+            <button type="submit" id="submitBtn">🔍 Analyze Equation</button>
+            <button type="button" id="clearBtn">🗑️ Clear</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your equation...</p>
+        </div>
+        
+        <div id="results" style="display: none;">
+            <div class="result">
+                <h3>📝 Recognition Results</h3>
+                <div>
+                    <strong>Detected Equation:</strong>
+                    <div class="equation" id="detectedEquation"></div>
+                </div>
+                <div>
+                    <strong>Result:</strong>
+                    <div id="calculationResult"></div>
+                </div>
+                <div>
+                    <strong>Processed Image:</strong><br>
+                    <img id="processedImage" class="processed-image" alt="Processed image">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadForm = document.getElementById('uploadForm');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const submitBtn = document.getElementById('submitBtn');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+            }
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Form submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(uploadForm);
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            formData.append('mode', mode);
+            
+            // Show loading
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Display results
+                    document.getElementById('detectedEquation').textContent = data.equation;
+                    
+                    let resultText;
+                    if (typeof data.result === 'object') {
+                        resultText = JSON.stringify(data.result, null, 2);
+                    } else {
+                        resultText = data.result;
+                    }
+                    document.getElementById('calculationResult').textContent = resultText;
+                    
+                    if (data.processed_image) {
+                        document.getElementById('processedImage').src = data.processed_image;
+                    }
+                    
+                    results.style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Clear functionality
+        clearBtn.addEventListener('click', () => {
+            uploadForm.reset();
+            results.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

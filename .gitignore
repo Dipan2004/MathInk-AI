@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.keras
+*.h5
+*.png
+*.jpg
+*.jpeg
+*.npy
+*.log
+models/
+data/
+logs/
+.env
+venv/
+uploads/
+training_history.png
