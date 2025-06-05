@@ -358,23 +358,6 @@ python converter.py
 python -m pytest tests/
 ```
 
----
-
-## 📊 Benchmarks & Comparisons
-
-| Feature | Our System | Competitor A | Competitor B |
-|---------|------------|--------------|--------------|
-| Accuracy | **96.8%** | 89.2% | 91.5% |
-| Speed | **0.3s** | 1.2s | 0.8s |
-| Model Size | **15MB** | 45MB | 32MB |
-| Symbols Supported | **39** | 20 | 25 |
-| Real-time Solving | ✅ | ❌ | ✅ |
-| Web Interface | ✅ | ❌ | ✅ |
-| API Support | ✅ | ✅ | ❌ |
-| Legacy Compatibility | ✅ | ❌ | ❌ |
-
----
-
 ## 🐛 Troubleshooting
 
 ### Common Issues
