@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """
-Setup Script for Enhanced Math Equation Recognition System
 Compatible with Python 3.11+
 """
 
